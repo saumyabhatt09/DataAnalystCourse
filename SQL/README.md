@@ -1,0 +1,188 @@
+
+## Basic SQL
+
+### Create Table
+Table 1 Query:
+Create Table EmployeeDemographics 
+(EmployeeID int, 
+FirstName varchar(50), 
+LastName varchar(50), 
+Age int, 
+Gender varchar(50)
+)
+
+Table 2 Query:
+Create Table EmployeeSalary 
+(EmployeeID int, 
+JobTitle varchar(50), 
+Salary int
+)
+
+
+
+Table 1 Insert:
+Insert into EmployeeDemographics VALUES
+(1001, 'Jim', 'Halpert', 30, 'Male'),
+(1002, 'Pam', 'Beasley', 30, 'Female'),
+(1003, 'Dwight', 'Schrute', 29, 'Male'),
+(1004, 'Angela', 'Martin', 31, 'Female'),
+(1005, 'Toby', 'Flenderson', 32, 'Male'),
+(1006, 'Michael', 'Scott', 35, 'Male'),
+(1007, 'Meredith', 'Palmer', 32, 'Female'),
+(1008, 'Stanley', 'Hudson', 38, 'Male'),
+(1009, 'Kevin', 'Malone', 31, 'Male')
+
+Table 2 Insert:
+Insert Into EmployeeSalary VALUES
+(1001, 'Salesman', 45000),
+(1002, 'Receptionist', 36000),
+(1003, 'Salesman', 63000),
+(1004, 'Accountant', 47000),
+(1005, 'HR', 50000),
+(1006, 'Regional Manager', 65000),
+(1007, 'Supplier Relations', 41000),
+(1008, 'Salesman', 48000),
+(1009, 'Accountant', 42000)
+
+### Select query
+
+SELECT * 
+	FROM EmployeeDemographics
+
+SELECT  *
+	FROM  Test.dbo.EmployeeDemographics
+
+SELECT FirstName, LastName
+	FROM EmployeeDempgraphics
+
+* Other functions -
+	* AVG() - To get the average
+	* Count() - To return count of 
+	* AS - To rename a column
+	* DISTINCT - To return  without duplicates
+	* MAX and MIN - To calculate maximum and minimum
+
+### Where 
+
+Select * 
+	from EmployeeDemographics
+	WHERE Gender = 'Male'
+	
+* Other functions -
+	* <> - Not equals to
+	* And - And operator
+	* Or - Or operator
+	* Like - To match text mostly
+		* SELECT *
+			FROM EmployeeDemographics
+			WHERE LastName LIKE '%s'  (% - wildcard)
+	* Null and Not Null - To return null and not null
+	* In - = for multiple things
+		* SELECT *
+			FROM EmployeeDemographics
+			WHERE LastName IN ('Jim', 'Pam')
+			
+### Group and Order By
+
+Used to arrange the data in a particular manner.
+**Note: The Aggregation functions are usually used with Group by statement**
+
+SELECT Gender, Count(Gender)
+	FROM dbo.EmployeeDemographics
+	Group by (Gender)
+
+SELECT *
+	FROM dbo.EmployeeDemographics
+	Order by (FirstName) - Will display in alphabetical order
+
+
+**Incorrect**
+	SELECT FirstName, Gender
+	FROM dbo.EmployeeDemographics
+	Group by (Gender)
+Error: Column 'dbo.EmployeeDemographics.FirstName' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause.
+
+### Joins
+
+Select FirstName, LastName from
+Test.dbo.EmployeeDemographics
+INNER JOIN Test.dbo.EmployeeSalary
+ON Test.dbo.EmployeeDemographics.EmployeeID = Test.dbo.EmployeeSalary.EmployeeID
+WHERE Gender = 'Male'
+
+ 1. Inner Join = returns everything matching from both tables
+ 2. Full Outer Join = returns everything matching and which does not match and combines it to one table
+ 3. Left and Right Outer Join = returns everything in the left table and matching from right table and vise versa.
+
+If we want to return EmployeeID we have to specify which table's EmployeeID we want
+
+### Unions
+
+Used usually when we have all the same columns in both the tables and we want to merge the tables together.
+It usually matches using the data type so have to be careful while applying the Unions.
+
+### Case Statements
+
+Select FirstName, LastName,
+**Case**
+	**WHEN Age >30 THEN 'Young'
+	ELSE 'Baby'**
+**End**
+from Test.dbo.EmployeeDemographics
+INNER JOIN Test.dbo.EmployeeSalary
+ON Test.dbo.EmployeeDemographics.EmployeeID = Test.dbo.EmployeeSalary.EmployeeID
+WHERE Gender = 'Male'
+
+### Having 
+
+The SQL HAVING Clause -  The _HAVING clause_ was added to _SQL_ because the WHERE keyword cannot be used with aggregate functions.
+
+Select FirstName, LastName
+from Test.dbo.EmployeeDemographics
+INNER JOIN Test.dbo.EmployeeSalary
+ON Test.dbo.EmployeeDemographics.EmployeeID = Test.dbo.EmployeeSalary.EmployeeID
+WHERE Gender = 'Male'
+Group By FirstName, LastName, Salary
+HAVING MAX(Salary) > 20000
+
+### Update and Delete
+UPDATE dbo.EmployeeDemographics
+	SET FirstName = 'Jimmy'
+	Where FirstName = 'Jim'
+SELECT * from dbo.EmployeeDemographics
+
+DELETE FROM dbo.EmployeeDemographics
+WHERE EmployeeID = 1002
+SELECT * from dbo.EmployeeDemographics
+
+**To safeguard from deleting needed data execute a select query first before delete query so that we know what exactly are we deleting**
+
+
+### Aliasing
+SELECT FirstName + ' '+LastName AS FullName
+From dbo.EmployeeDemographics
+
+Useful when we are executing bigger queries and when we have aggregate functions which return a derived column.
+
+We can also assign an alias name to table and it makes the script look clean and easy to understand. 
+
+### Partition By
+Comes in very useful when we want to apply aggregate function on just a selected column and display other columns alongside in the result set.
+
+SELECT FirstName, LastName, Count(Gender) OVER (PARTITION BY Gender) as MaximumSalary
+FROM dbo.EmployeeDemographics
+JOIN dbo.EmployeeSalary
+ON dbo.EmployeeDemographics.EmployeeID = dbo.EmployeeSalary.EmployeeID
+ORDER by Salary DESC
+
+### CTE (Common Table Expression)
+
+WITH Employee as
+	(Select FirstName, LastName, Count(Gender) OVER (Partition by Gender) as TotalGender
+	 From dbo.EmployeeDemographics
+	)
+Select FirstName from Employee
+
+A CTE, or Common Table Expression, is a temporary named result set that you can reference within a SQL statement. It's like creating a temporary table that exists only for the duration of the query execution.
+This means that the Employee is a kind of temp table being created in the memory that can be used in the subqueries.
+The CTE has to be generated every time to used in the subsequent queries.
