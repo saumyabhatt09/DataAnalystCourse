@@ -175,6 +175,8 @@ JOIN dbo.EmployeeSalary
 ON dbo.EmployeeDemographics.EmployeeID = dbo.EmployeeSalary.EmployeeID
 ORDER by Salary DESC
 
+Resource: https://www.youtube.com/watch?v=h3Jx4CoNgL8
+
 ### CTE (Common Table Expression)
 
 WITH Employee as
@@ -186,3 +188,185 @@ Select FirstName from Employee
 A CTE, or Common Table Expression, is a temporary named result set that you can reference within a SQL statement. It's like creating a temporary table that exists only for the duration of the query execution.
 This means that the Employee is a kind of temp table being created in the memory that can be used in the subqueries.
 The CTE has to be generated every time to used in the subsequent queries.
+
+###  Temp Tables
+A temporary SQL table, also known as a  **temp table**, is a table that is created and used within the context of a specific session or transaction in a database management system. It is designed to store temporary data that is needed for a short duration and does not require a permanent storage solution.
+
+Temporary tables are created on-the-fly and are typically used to perform complex calculations, store intermediate results, or manipulate subsets of data during the execution of a query or a series of queries.
+
+Create TABLE #Employee 
+	(
+		FirstName varchar(100),
+		LastName varchar (100),
+		Gender varchar(15),
+		Salary int
+	)
+
+Insert into #Employee 
+Select FirstName, LastName, Gender, Salary 
+from EmployeeDemographics
+INNER JOIN EmployeeSalary
+ON EmployeeDemographics.EmployeeID = EmployeeSalary.EmployeeID
+Where Gender = 'Male'
+
+Select * from #Employee
+
+### String Functions
+--Drop Table EmployeeErrors;
+
+
+CREATE TABLE EmployeeErrors (
+EmployeeID varchar(50)
+,FirstName varchar(50)
+,LastName varchar(50)
+)
+
+Insert into EmployeeErrors Values 
+('1001  ', 'Jimbo', 'Halbert')
+,('  1002', 'Pamela', 'Beasely')
+,('1005', 'TOby', 'Flenderson - Fired')
+
+Select *
+From EmployeeErrors
+
+-- Using Trim, LTRIM, RTRIM
+
+Select EmployeeID, TRIM(employeeID) AS IDTRIM
+FROM EmployeeErrors 
+
+Select EmployeeID, RTRIM(employeeID) as IDRTRIM
+FROM EmployeeErrors 
+
+Select EmployeeID, LTRIM(employeeID) as IDLTRIM
+FROM EmployeeErrors 
+
+	
+
+
+
+-- Using Replace
+
+Select LastName, REPLACE(LastName, '- Fired', '') as LastNameFixed
+FROM EmployeeErrors
+
+
+-- Using Substring
+
+Select Substring(err.FirstName,1,3), Substring(dem.FirstName,1,3), Substring(err.LastName,1,3), Substring(dem.LastName,1,3)
+FROM EmployeeErrors err
+JOIN EmployeeDemographics dem
+	on Substring(err.FirstName,1,3) = Substring(dem.FirstName,1,3)
+	and Substring(err.LastName,1,3) = Substring(dem.LastName,1,3)
+
+
+
+-- Using UPPER and lower
+
+Select firstname, LOWER(firstname)
+from EmployeeErrors
+
+Select Firstname, UPPER(FirstName)
+from EmployeeErrors
+
+### Stored Procedures
+
+A stored procedure is a prepared SQL code that you can save, so the code can be reused over and over again.
+
+So if you have an SQL query that you write over and over again, save it as a stored procedure, and then just call it to execute it.
+
+You can also pass parameters to a stored procedure, so that the stored procedure can act based on the parameter value(s) that is passed.
+
+CREATE PROCEDURE Temp_Employee
+AS
+DROP TABLE IF EXISTS #temp_employee
+Create table #temp_employee (
+JobTitle varchar(100),
+EmployeesPerJob int ,
+AvgAge int,
+AvgSalary int
+)
+
+
+Insert into #temp_employee
+SELECT JobTitle, Count(JobTitle), Avg(Age), AVG(salary)
+FROM SQLTutorial..EmployeeDemographics emp
+JOIN SQLTutorial..EmployeeSalary sal
+	ON emp.EmployeeID = sal.EmployeeID
+group by JobTitle
+
+Select * 
+From #temp_employee
+GO;
+
+
+
+
+CREATE PROCEDURE Temp_Employee2 
+@JobTitle nvarchar(100)
+AS
+DROP TABLE IF EXISTS #temp_employee3
+Create table #temp_employee3 (
+JobTitle varchar(100),
+EmployeesPerJob int ,
+AvgAge int,
+AvgSalary int
+)
+
+
+Insert into #temp_employee3
+SELECT JobTitle, Count(JobTitle), Avg(Age), AVG(salary)
+FROM SQLTutorial..EmployeeDemographics emp
+JOIN SQLTutorial..EmployeeSalary sal
+	ON emp.EmployeeID = sal.EmployeeID
+where JobTitle = @JobTitle --- make sure to change this in this script from original above
+group by JobTitle
+
+Select * 
+From #temp_employee3
+GO;
+
+
+exec Temp_Employee2 @jobtitle = 'Salesman'
+exec Temp_Employee2 @jobtitle = 'Accountant'
+
+### Sub-Queries
+
+Reference: https://www.youtube.com/watch?v=m1KcNV-Zhmc&list=PLUaB-1hjhk8FE_XZ87vPPSfHqb6OcM0cF&index=18
+
+Select EmployeeID, JobTitle, Salary
+From EmployeeSalary
+
+-- Subquery in Select
+
+Select EmployeeID, Salary, (Select AVG(Salary) From EmployeeSalary) as AllAvgSalary
+From EmployeeSalary
+
+-- How to do it with Partition By
+Select EmployeeID, Salary, AVG(Salary) over () as AllAvgSalary
+From EmployeeSalary
+
+-- Why Group By doesn't work
+Select EmployeeID, Salary, AVG(Salary) as AllAvgSalary
+From EmployeeSalary
+Group By EmployeeID, Salary
+order by EmployeeID
+
+
+-- Subquery in From
+
+Select a.EmployeeID, AllAvgSalary
+From 
+	(Select EmployeeID, Salary, AVG(Salary) over () as AllAvgSalary
+	 From EmployeeSalary) a
+Order by a.EmployeeID
+
+
+-- Subquery in Where
+
+
+Select EmployeeID, JobTitle, Salary
+From EmployeeSalary
+where EmployeeID in (
+	Select EmployeeID 
+	From EmployeeDemographics
+	where Age > 30)
